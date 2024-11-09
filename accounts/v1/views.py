@@ -20,6 +20,28 @@ def get_tokens_for_user(user):
         'access': str(refresh.access_token),
     }
 
+# View to send OTP code for phone number verification
+class OTPVerificationView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = OTPSerializer(data=request.data)
+        if serializer.is_valid():
+            phone_number = serializer.validated_data['phone_number']
+            otp = str(random.randint(1000, 9999))  # Generate a random 4-digit OTP
+            
+            # Send OTP code using SMS API
+            success, message = send_verification_code(phone_number, otp)
+            if success:
+                user, created = User.objects.get_or_create(phone_number=phone_number)
+                user.otp = otp
+                user.otp_verified = False  # Mark as unverified until OTP is validated
+                user.save()
+                return Response({"message": "OTP sent successfully"}, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": f"Failed to send OTP: {message}"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class RegisterUserView(APIView):
     permission_classes = [AllowAny]
 
@@ -80,4 +102,22 @@ class OTPVerifyView(APIView):
                 user.otp_verified = True
                 user.otp = ''
                 user.save()
+                return Response({"message": "OTP verified successfully."}, status=status.HTTP_200_OK)
+            return Response({"error": "Invalid OTP or phone number."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class PasswordResetView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetSerializer(data=request.data)
+        if serializer.is_valid():
+            phone_number = serializer.validated_data['phone_number']
+            new_password = serializer.validated_data['new_password']
+            user = User.objects.filter(phone_number=phone_number).first()
+            if user:
+                user.set_password(new_password)
+                user.save()
+                return Response({"message": "Password reset successfully."}, status=status.HTTP_200_OK)
+            return Response({"error": "User with this phone number not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

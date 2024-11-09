@@ -26,6 +26,22 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
 
+    # Add related_name attributes to avoid conflicts with auth.User
+    groups = models.ManyToManyField(
+        'auth.Group',
+        related_name='customuser_groups',  # custom related name to avoid clash
+        blank=True,
+        help_text='The groups this user belongs to.',
+        verbose_name='groups',
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        related_name='customuser_permissions',  # custom related name to avoid clash
+        blank=True,
+        help_text='Specific permissions for this user.',
+        verbose_name='user permissions',
+    )
+
     objects = CustomUserManager()
 
     USERNAME_FIELD = 'phone_number'
