@@ -1,18 +1,16 @@
+# urls.py
 from django.urls import path
 from .views import (
-    OTPVerificationView, 
-    RegisterUserView, 
-    PasswordLoginView, 
-    OTPLoginView, 
-    PasswordResetView,
-    OTPVerifyView
+    OTPVerificationView, OTPVerifyView, RegisterUserView,
+    PasswordLoginView, UserUpdateView, UserInfoView, CustomTokenRefreshView
 )
 
 urlpatterns = [
     path('verify-phone/', OTPVerificationView.as_view(), name='verify_phone'),
+    path('verify-otp/', OTPVerifyView.as_view(), name='verify_otp'),
     path('register/', RegisterUserView.as_view(), name='register'),
     path('login/', PasswordLoginView.as_view(), name='login'),
-    path('login-otp/', OTPLoginView.as_view(), name='login_otp'),
-    path('reset-password/', PasswordResetView.as_view(), name='reset_password'),
-    path('verify-otp/', OTPVerifyView.as_view(), name='verify_otp'),  # Added OTPVerifyView if needed
+    path('update-user/', UserUpdateView.as_view(), name='update_user'),
+    path('user-info/', UserInfoView.as_view(), name='user_info'),
+    path('token/refresh/', CustomTokenRefreshView.as_view(), name='token_refresh'),
 ]
