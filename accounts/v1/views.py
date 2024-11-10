@@ -13,6 +13,7 @@ import random
 
 User = get_user_model()
 
+# Helper function to generate JWT tokens for a user
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
     return {
@@ -20,7 +21,7 @@ def get_tokens_for_user(user):
         'access': str(refresh.access_token),
     }
 
-# View to send OTP code for phone number verification
+# View to send OTP for phone number verification
 class OTPVerificationView(APIView):
     permission_classes = [AllowAny]
 
@@ -30,18 +31,19 @@ class OTPVerificationView(APIView):
             phone_number = serializer.validated_data['phone_number']
             otp = str(random.randint(1000, 9999))  # Generate a random 4-digit OTP
             
-            # Send OTP code using SMS API
+            # Attempt to send the OTP via SMS API
             success, message = send_verification_code(phone_number, otp)
             if success:
                 user, created = User.objects.get_or_create(phone_number=phone_number)
                 user.otp = otp
-                user.otp_verified = False  # Mark as unverified until OTP is validated
+                user.otp_verified = False  # Set to unverified until OTP validation
                 user.save()
                 return Response({"message": "OTP sent successfully"}, status=status.HTTP_200_OK)
             else:
                 return Response({"error": f"Failed to send OTP: {message}"}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# User registration endpoint
 class RegisterUserView(APIView):
     permission_classes = [AllowAny]
 
@@ -57,6 +59,7 @@ class RegisterUserView(APIView):
                 return Response({"error": "Phone number not verified."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# Password-based login
 class PasswordLoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -72,6 +75,7 @@ class PasswordLoginView(APIView):
             return Response({"error": "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# OTP-based login
 class OTPLoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -89,6 +93,7 @@ class OTPLoginView(APIView):
             return Response({"error": "User not found or phone number not verified."}, status=status.HTTP_404_NOT_FOUND)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# OTP verification view to verify the OTP code sent to the user
 class OTPVerifyView(APIView):
     permission_classes = [AllowAny]
 
@@ -100,12 +105,13 @@ class OTPVerifyView(APIView):
             user = User.objects.filter(phone_number=phone_number, otp=otp).first()
             if user:
                 user.otp_verified = True
-                user.otp = ''
+                user.otp = ''  # Clear the OTP after successful verification
                 user.save()
                 return Response({"message": "OTP verified successfully."}, status=status.HTTP_200_OK)
             return Response({"error": "Invalid OTP or phone number."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# Password reset view
 class PasswordResetView(APIView):
     permission_classes = [AllowAny]
 

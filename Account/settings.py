@@ -30,7 +30,7 @@ SECRET_KEY = 'django-insecure-f=6!&0l@i($njy(n#lnfu1tn))xkuh^kq(-!7fl87-fzxg9&u#
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['65.21.6.194']
 
 
 # Application definition
@@ -153,7 +153,6 @@ OTP_API_TOKEN = config('OTP_API_TOKEN')
 
 
 
-
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -169,3 +168,5 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
+
+AUTH_USER_MODEL = 'accounts.CustomUser'
