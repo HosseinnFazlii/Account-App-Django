@@ -1,4 +1,3 @@
-# serializers.py
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
@@ -12,22 +11,25 @@ class OTPVerifySerializer(serializers.Serializer):
     phone_number = serializers.CharField()
     otp = serializers.CharField()
 
-class UserRegistrationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['phone_number']
-
 class UserUpdateSerializer(serializers.ModelSerializer):
-    new_password = serializers.CharField(write_only=True, required=False, validators=[validate_password])
+    password = serializers.CharField(write_only=True, required=False, validators=[validate_password])
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'email', 'new_password']
+        fields = ['first_name', 'last_name', 'email', 'password']
 
     def update(self, instance, validated_data):
-        if 'new_password' in validated_data:
-            instance.set_password(validated_data.pop('new_password'))
-        return super().update(instance, validated_data)
+        # Check if password is being updated and hash it
+        if 'password' in validated_data:
+            instance.set_password(validated_data.pop('password'))
+        # Update other fields
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.email = validated_data.get('email', instance.email)
+        instance.save()
+        return instance
+
+
 
 class LoginSerializer(serializers.Serializer):
     phone_number = serializers.CharField()

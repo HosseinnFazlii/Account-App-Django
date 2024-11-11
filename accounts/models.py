@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils import timezone
+from datetime import timedelta
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, phone_number, password=None, **extra_fields):
@@ -21,7 +22,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     last_name = models.CharField(max_length=30, blank=True)
     phone_number = models.CharField(max_length=15, unique=True, null=True, blank=True)
     email = models.EmailField(unique=True, blank=True, null=True)
-    otp = models.CharField(max_length=4, blank=True, null=True)  # New field for OTP
+    otp = models.CharField(max_length=4, blank=True, null=True) 
+    otp_created_at = models.DateTimeField(blank=True, null=True) # New field for OTP
     otp_verified = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)

@@ -1,17 +1,17 @@
-# views.py
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
-from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth import get_user_model
 from .serializers import (
-    OTPSerializer, OTPVerifySerializer, UserRegistrationSerializer,
-    UserUpdateSerializer, LoginSerializer
+    OTPSerializer, OTPVerifySerializer, UserUpdateSerializer, LoginSerializer
 )
 from accounts.utils import send_verification_code
 import random
+from django.utils import timezone
+from datetime import timedelta
 
 User = get_user_model()
 
@@ -29,15 +29,19 @@ class OTPVerificationView(APIView):
         serializer = OTPSerializer(data=request.data)
         if serializer.is_valid():
             phone_number = serializer.validated_data['phone_number']
-            otp = str(random.randint(1000, 9999))
+            otp = str(random.randint(1000, 9999))  # Generate a random 4-digit OTP
+            
+            # Send OTP code using SMS API
             success, message = send_verification_code(phone_number, otp)
             if success:
                 user, created = User.objects.get_or_create(phone_number=phone_number)
                 user.otp = otp
-                user.otp_verified = False
+                user.otp_created_at = timezone.now()  # Set the OTP creation time
+                user.otp_verified = False  # Mark as unverified until OTP is validated
                 user.save()
                 return Response({"message": "OTP sent successfully"}, status=status.HTTP_200_OK)
-            return Response({"error": f"Failed to send OTP: {message}"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({"error": f"Failed to send OTP: {message}"}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class OTPVerifyView(APIView):
@@ -49,30 +53,26 @@ class OTPVerifyView(APIView):
             phone_number = serializer.validated_data['phone_number']
             otp = serializer.validated_data['otp']
             user = User.objects.filter(phone_number=phone_number, otp=otp).first()
+
             if user:
+                # Check if the OTP is expired
+                expiration_time = timedelta(minutes=2)
+                if timezone.now() - user.otp_created_at > expiration_time:
+                    return Response({"error": "OTP has expired."}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # If OTP is valid and not expired, verify the user
                 user.otp_verified = True
-                user.otp = ""
+                user.otp = ''  # Clear the OTP
                 user.save()
+                
+                # Generate JWT tokens and return them
                 tokens = get_tokens_for_user(user)
-                return Response({"message": "OTP verified successfully", **tokens}, status=status.HTTP_200_OK)
+                return Response({
+                    "message": "OTP verified successfully.",
+                    "tokens": tokens
+                }, status=status.HTTP_200_OK)
+                
             return Response({"error": "Invalid OTP or phone number."}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class RegisterUserView(APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request):
-        serializer = UserRegistrationSerializer(data=request.data)
-        if serializer.is_valid():
-            phone_number = serializer.validated_data['phone_number']
-            user = User.objects.filter(phone_number=phone_number, otp_verified=True).first()
-            if user:
-                user.first_name = ""
-                user.last_name = ""
-                user.email = ""
-                user.save()
-                return Response({"message": "User registered successfully."}, status=status.HTTP_201_CREATED)
-            return Response({"error": "Phone number not verified."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class PasswordLoginView(APIView):
@@ -83,23 +83,32 @@ class PasswordLoginView(APIView):
         if serializer.is_valid():
             phone_number = serializer.validated_data['phone_number']
             password = serializer.validated_data['password']
-            user = authenticate(phone_number=phone_number, password=password)
-            if user:
-                tokens = get_tokens_for_user(user)
-                return Response(tokens, status=status.HTTP_200_OK)
-            return Response({"error": "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
+            try:
+                user = User.objects.get(phone_number=phone_number)
+                # Using check_password to verify raw password with hashed password
+                if user.check_password(password):
+                    tokens = get_tokens_for_user(user)
+                    return Response(tokens, status=status.HTTP_200_OK)
+                else:
+                    return Response({"error": "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
+            except User.DoesNotExist:
+                return Response({"error": "Invalid credentials."}, status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+        
+        
 class UserUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request):
+        print("Updating user:", request.user)
         serializer = UserUpdateSerializer(request.user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
+            print("User updated successfully in the database.")
             return Response({"message": "User updated successfully."}, status=status.HTTP_200_OK)
+        print("Errors during update:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
 class UserInfoView(APIView):
     permission_classes = [IsAuthenticated]
 
