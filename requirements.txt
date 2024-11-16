@@ -6,3 +6,4 @@ smsir-python
 djangorestframework-simplejwt
 requests
 drf-yasg    
+zarinpal-payment-integration

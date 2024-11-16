@@ -180,3 +180,13 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
 }
+
+
+
+# settings.py
+
+ZARINPAL = {
+    'MERCHANT_ID': 'your_merchant_id',
+    'CALLBACK_URL': 'https://yourdomain.com/api/financial/verify/',  # Update with your domain
+    'SANDBOX': True,  # Set to False in production
+}
