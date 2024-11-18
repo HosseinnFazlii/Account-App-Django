@@ -12,6 +12,8 @@ from accounts.utils import send_verification_code
 import random
 from django.utils import timezone
 from datetime import timedelta
+from wallet.models import Wallet
+
 
 User = get_user_model()
 
@@ -59,22 +61,30 @@ class OTPVerifyView(APIView):
                 expiration_time = timedelta(minutes=2)
                 if timezone.now() - user.otp_created_at > expiration_time:
                     return Response({"error": "OTP has expired."}, status=status.HTTP_400_BAD_REQUEST)
-                
+
                 # If OTP is valid and not expired, verify the user
                 user.otp_verified = True
                 user.otp = ''  # Clear the OTP
                 user.save()
-                
+
+                # Automatically create a wallet for the user if not already created
+                wallet, created = Wallet.objects.get_or_create(user=user)
+
                 # Generate JWT tokens and return them
                 tokens = get_tokens_for_user(user)
                 return Response({
                     "message": "OTP verified successfully.",
+                    "wallet": {
+                        "id": wallet.id,
+                        "balance": wallet.balance,
+                        "currency": wallet.currency,
+                    },
                     "tokens": tokens
                 }, status=status.HTTP_200_OK)
-                
+
             return Response({"error": "Invalid OTP or phone number."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
 class PasswordLoginView(APIView):
     permission_classes = [AllowAny]
 

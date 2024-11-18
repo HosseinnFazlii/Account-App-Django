@@ -1,9 +1,15 @@
-# financial/models.py
-
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.utils.timezone import now
+from datetime import timedelta
 
 User = get_user_model()
+
+def default_due_date():
+    """
+    Returns the current time plus one day.
+    """
+    return now() + timedelta(days=1)
 
 class Wallet(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -17,7 +23,7 @@ class Invoice(models.Model):
     wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
-    due_date = models.DateTimeField()
+    due_date = models.DateTimeField(default=default_due_date)  # Updated to use a callable function
     status = models.CharField(max_length=20, choices=[
         ('unpaid', 'Unpaid'),
         ('paid', 'Paid')

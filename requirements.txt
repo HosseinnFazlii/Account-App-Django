@@ -7,4 +7,5 @@ djangorestframework-simplejwt
 requests
 drf-yasg    
 zarinpal-payment-integration
-zarinpal
+zarinpal 
+django-cors-headers
