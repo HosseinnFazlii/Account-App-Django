@@ -186,7 +186,7 @@ SIMPLE_JWT = {
 # settings.py
 
 ZARINPAL = {
-    'MERCHANT_ID': 'your_merchant_id',
-    'CALLBACK_URL': 'https://yourdomain.com/api/financial/verify/',  # Update with your domain
+    'MERCHANT_ID': '1faffeb3-3174-426f-90b3-bbd70563cacd',  # Your Zarinpal merchant ID
+    'CALLBACK_URL': 'https://yourdomain.com/api/financial/verify/',  # Replace with your actual callback URL
     'SANDBOX': True,  # Set to False in production
 }
