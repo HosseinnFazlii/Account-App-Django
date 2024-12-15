@@ -17,7 +17,7 @@ SECRET_KEY = config('SECRET_KEY', default='your-secret-key')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = ['65.21.6.194', 'www.beatbuy.app', 'beatbuy.app']
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts',
     'wallet',
+    'sellers',
     'corsheaders',
     'rest_framework',
     'drf_yasg',  # Swagger documentation

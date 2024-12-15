@@ -1,6 +1,7 @@
 Django>=3.2,<4.0
 djangorestframework
 psycopg2
+pillow
 python-decouple
 smsir-python
 djangorestframework-simplejwt
