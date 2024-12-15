@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   backend:
     build: .
@@ -31,10 +33,12 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./ssl:/etc/nginx/ssl  # Mount SSL certificates here
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro  # Mount NGINX configuration
+      - ./ssl/cert.crt:/etc/nginx/ssl/cert.crt:ro           # SSL certificate
+      - ./ssl//private.key:/etc/nginx/ssl/private.key:ro     # SSL private key
     depends_on:
       - backend
 
 volumes:
   postgres_data:
+
