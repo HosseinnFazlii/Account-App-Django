@@ -6,6 +6,7 @@ from wallet.models import Wallet, Invoice, Transaction
 from wallet.v1.serializers import WalletSerializer, InvoiceSerializer, TransactionSerializer
 from zarinpal.api import ZarinPalPayment
 from django.conf import settings
+from product.models import Product
 
 class WalletDetailView(APIView):
     permission_classes = [IsAuthenticated]
@@ -85,6 +86,14 @@ class PaymentVerifyView(APIView):
             transaction.invoice.save()
             transaction.wallet.balance += transaction.amount
             transaction.wallet.save()
+
+            # Update product stock based on the invoice
+            for product in transaction.invoice.products.all():  # Assuming the invoice has a many-to-many relationship with products
+                if product.stock >= product.quantity:
+                    product.stock -= product.quantity
+                    product.save()
+                else:
+                    return Response({"error": f"Insufficient stock for product {product.name}."}, status=status.HTTP_400_BAD_REQUEST)
 
             return Response({"message": "Payment successful."}, status=status.HTTP_200_OK)
 
