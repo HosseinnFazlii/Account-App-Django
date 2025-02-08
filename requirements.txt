@@ -1,4 +1,4 @@
-Django>=3.2,<4.0
+django==4.2
 djangorestframework
 psycopg2
 pillow
@@ -8,5 +8,7 @@ djangorestframework-simplejwt
 requests
 drf-yasg    
 zarinpal-payment-integration
-zarinpal 
+#zarinpal 
 django-cors-headers
+instagrapi==2.1.2
+pydantic==2.7.1

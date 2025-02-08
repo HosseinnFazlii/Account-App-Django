@@ -26,11 +26,11 @@ class SellerStoreRegisterView(APIView):
                 )
 
             data = request.data.copy()
-            data['phone'] = getattr(request.user, 'phone_number', None)  # Use 'phone_number' field
-            serializer = SellerStoreSerializer(data=data)
+            data['phone'] = request.user.phone_number  # Auto-fill phone number
 
+            serializer = SellerStoreSerializer(data=data)
             if serializer.is_valid():
-                serializer.save(user=request.user)
+                serializer.save(user=request.user, phone=request.user.phone_number)  # Save phone
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

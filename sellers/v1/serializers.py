@@ -3,11 +3,13 @@ from sellers.models import SellerStore, Category, State, City
 
 
 class SellerStoreSerializer(serializers.ModelSerializer):
+    phone = serializers.CharField(read_only=True)  # Ensure phone is not required from input
+
     class Meta:
         model = SellerStore
         fields = [
             'id', 'username', 'phone', 'name', 'logo', 'category',
-            'state', 'city', 'description', 'instagram_id', 'created_at'  # Added instagram_id
+            'state', 'city', 'description', 'instagram_id', 'created_at'
         ]
         read_only_fields = ['username', 'phone', 'created_at']
 
