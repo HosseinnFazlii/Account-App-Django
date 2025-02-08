@@ -7,7 +7,7 @@ class SellerStoreSerializer(serializers.ModelSerializer):
         model = SellerStore
         fields = [
             'id', 'username', 'phone', 'name', 'logo', 'category',
-            'state', 'city', 'description', 'created_at'
+            'state', 'city', 'description', 'instagram_id', 'created_at'  # Added instagram_id
         ]
         read_only_fields = ['username', 'phone', 'created_at']
 

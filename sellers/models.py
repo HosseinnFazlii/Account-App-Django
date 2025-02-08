@@ -36,6 +36,7 @@ class SellerStore(models.Model):
     state = models.ForeignKey(State, on_delete=models.CASCADE)
     city = models.ForeignKey(City, on_delete=models.CASCADE)
     description = models.TextField(blank=True)
+    instagram_id = models.CharField(max_length=255, blank=True, null=True)  # Added Instagram ID field
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
