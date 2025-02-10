@@ -50,7 +50,9 @@ class ProductVariantSerializer(serializers.ModelSerializer):
 
 
 class ShoppingCartSerializer(serializers.ModelSerializer):
-    product_variant = ProductVariantSerializer()
+    product_variant = serializers.PrimaryKeyRelatedField(
+        queryset=ProductVariant.objects.all()
+    )  # ✅ This expects an ID instead of a dictionary
 
     class Meta:
         model = ShoppingCart

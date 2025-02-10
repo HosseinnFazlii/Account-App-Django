@@ -13,7 +13,7 @@ class Category(models.Model):
 
 class Attribute(models.Model):
     name = models.CharField(max_length=50)
-    categories = models.ManyToManyField(Category, related_name="attributes")  # Many categories can have the same attributes
+    categories = models.ManyToManyField(Category, related_name="attributes")
 
     def __str__(self):
         return self.name

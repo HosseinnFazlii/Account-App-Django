@@ -13,7 +13,8 @@ from .serializers import (
 )
 from sellers.models import SellerStore
 from wallet.models import Wallet
-
+from django.conf import settings
+import requests
 
 class ProductCreateView(APIView):
     permission_classes = [IsAuthenticated]
@@ -43,7 +44,8 @@ class ProductCreateView(APIView):
                         attribute_name = attr_value.get("attribute")
                         value_name = attr_value.get("value")
 
-                        attribute, _ = Attribute.objects.get_or_create(name=attribute_name, category=product.category)
+                        attribute, _ = Attribute.objects.get_or_create(name=attribute_name)
+                        attribute.categories.add(product.category)
 
                         attribute_value, _ = AttributeValue.objects.get_or_create(
                             attribute=attribute, value=value_name
@@ -127,24 +129,62 @@ class CreateInvoiceView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        """Generate an invoice based on the shopping cart."""
+        """Generate an invoice based on the shopping cart and handle insufficient balance."""
         cart_items = ShoppingCart.objects.filter(user=request.user)
 
         if not cart_items.exists():
             return Response({"error": "Your shopping cart is empty."}, status=status.HTTP_400_BAD_REQUEST)
 
-        total_amount = sum(item.total_price for item in cart_items)
+        total_amount = sum(item.total_price() for item in cart_items)  # Ensure this is a method call
         wallet, created = Wallet.objects.get_or_create(user=request.user)
 
         if wallet.balance < total_amount:
-            return Response({"error": "Insufficient wallet balance."}, status=status.HTTP_400_BAD_REQUEST)
+            # ✅ Auto-create a wallet top-up invoice
+            amount_needed = total_amount - wallet.balance  # Amount required to complete the purchase
+            top_up_invoice = Invoice.objects.create(
+                wallet=wallet,
+                amount=amount_needed,
+                status='pending',  # Payment is required
+                is_wallet_top_up=True  # Mark as wallet top-up invoice
+            )
 
+            # ✅ Generate Zarinpal payment link
+            zarinpal_request_url = "https://api.zarinpal.com/pg/v4/payment/request.json"
+            callback_url = f"{settings.ZARINPAL['CALLBACK_URL']}?invoice_id={top_up_invoice.id}"
+            
+            data = {
+                "merchant_id": settings.ZARINPAL["MERCHANT_ID"],
+                "amount": int(amount_needed * 10),  # Zarinpal works with Tomans (Rial / 10)
+                "callback_url": callback_url,
+                "description": f"Wallet top-up for {request.user.phone_number}",
+            }
+            headers = {"Content-Type": "application/json"}
+
+            response = requests.post(zarinpal_request_url, json=data, headers=headers)
+            result = response.json()
+
+            if "data" in result and "authority" in result["data"]:
+                payment_url = f"https://www.zarinpal.com/pg/StartPay/{result['data']['authority']}"
+
+                return Response({
+                    "error": "Insufficient wallet balance.",
+                    "message": "Redirecting to wallet top-up.",
+                    "wallet_top_up_invoice_id": top_up_invoice.id,
+                    "redirect_url": payment_url
+                }, status=status.HTTP_402_PAYMENT_REQUIRED)  # 402 = Payment Required
+
+            return Response({"error": "Zarinpal payment request failed.", "details": result}, status=status.HTTP_400_BAD_REQUEST)
+
+        # ✅ Proceed with checkout if balance is enough
         invoice = Invoice.objects.create(wallet=wallet, amount=total_amount, status='unpaid')
 
         cart_items.delete()
 
-        serializer = InvoiceSerializer(invoice)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response({
+            "message": "Invoice created successfully.",
+            "invoice_id": invoice.id,
+            "amount": total_amount
+        }, status=status.HTTP_201_CREATED)
 
 
 class CategoryListView(APIView):

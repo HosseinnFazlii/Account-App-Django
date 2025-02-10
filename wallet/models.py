@@ -20,17 +20,24 @@ class Wallet(models.Model):
         return f"{self.user.username}'s wallet - Balance: {self.balance}"
 
 class Invoice(models.Model):
-    wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE)
+    wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name="invoices")
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
-    due_date = models.DateTimeField(default=default_due_date)  # Updated to use a callable function
-    status = models.CharField(max_length=20, choices=[
-        ('unpaid', 'Unpaid'),
-        ('paid', 'Paid')
-    ], default='unpaid')
+    due_date = models.DateTimeField(default=default_due_date)
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('unpaid', 'Unpaid'),
+            ('paid', 'Paid'),
+            ('failed', 'Failed'),  # Added "failed" status for better error handling
+            ('pending', 'Pending'),  # Added "pending" to track processing payments
+        ],
+        default='unpaid'
+    )
+    is_wallet_top_up = models.BooleanField(default=False)  # ✅ New field to track top-up invoices
 
     def __str__(self):
-        return f"Invoice {self.id} - Amount: {self.amount} - Status: {self.status}"
+        return f"Invoice {self.id} - Amount: {self.amount} - Status: {self.status} - Top-up: {self.is_wallet_top_up}"
 
 class Transaction(models.Model):
     wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE)
