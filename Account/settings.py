@@ -37,8 +37,9 @@ INSTALLED_APPS = [
     'sellers',
     'corsheaders',
     'rest_framework',
-    'drf_yasg',
-    'scraper',  # Swagger documentation
+    'drf_yasg', # Swagger documentation
+    'scraper',
+      'ai',  
 ]
 
 MIDDLEWARE = [
